@@ -1,1 +1,1 @@
-# SF-attention-CNN-LSTM-Opt
+# scalable filtered attention-based CNN-LSTM optimized model
