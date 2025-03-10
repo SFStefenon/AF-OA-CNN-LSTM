@@ -1,4 +1,4 @@
-# Scalable filtered attention-based CNN-LSTM optimized model
+# Scalable filtered attention CNN-LSTM optimized model
 
 This repository presents an attention-based CNN-LSTM model optimized by an adaptive tree-structured Parzen estimator (ATPE) with a scalable filtered input stage.
 The proposed algorithm considers an evaluation of random search, annealing search, TPE, and ATPE to model hyperparameter tuning.
