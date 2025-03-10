@@ -224,7 +224,7 @@ if analysis_downsample == True:
       ax4.grid(linestyle = '--', linewidth = 0.5, zorder=0)
       ax4.set_title('(D)', loc='left')
       ax4.legend(loc='upper right')
-      plt.savefig('./Results/downsample.pdf', bbox_inches = 'tight')
+      plt.savefig('./Results/downsample1.pdf', bbox_inches = 'tight')
       plt.show
       
 # All filters analysis
