@@ -890,11 +890,11 @@ if analysis_opt_model_k_fold == True:
         MSLE.append(mean_squared_log_error(y_true, y_pred))
         R2.append(abs(r2_score(y_true, y_pred)))
             
-    np.savetxt('./statistics/RMSE_'+str(k_fold)+'_fold_dataset_'+str(dataset)+'.csv', RMSE, delimiter=',', fmt='%.10f')
-    np.savetxt('./statistics/MAE_'+str(k_fold)+'_fold_dataset_'+str(dataset)+'.csv', MAE, delimiter=',', fmt='%.10f')
-    np.savetxt('./statistics/MAPE_'+str(k_fold)+'_fold_dataset_'+str(dataset)+'.csv', MAPE, delimiter=',', fmt='%.10f')
-    np.savetxt('./statistics/MSLE_'+str(k_fold)+'_fold_dataset_'+str(dataset)+'.csv', MSLE, delimiter=',', fmt='%.10f')
-    np.savetxt('./statistics/R2_'+str(k_fold)+'_fold_dataset_'+str(dataset)+'.csv', R2, delimiter=',', fmt='%.10f')
+    np.savetxt('./Statistics/RMSE_'+str(k_fold)+'_fold_dataset_'+str(dataset)+'.csv', RMSE, delimiter=',', fmt='%.10f')
+    np.savetxt('./Statistics/MAE_'+str(k_fold)+'_fold_dataset_'+str(dataset)+'.csv', MAE, delimiter=',', fmt='%.10f')
+    np.savetxt('./Statistics/MAPE_'+str(k_fold)+'_fold_dataset_'+str(dataset)+'.csv', MAPE, delimiter=',', fmt='%.10f')
+    np.savetxt('./Statistics/MSLE_'+str(k_fold)+'_fold_dataset_'+str(dataset)+'.csv', MSLE, delimiter=',', fmt='%.10f')
+    np.savetxt('./Statistics/R2_'+str(k_fold)+'_fold_dataset_'+str(dataset)+'.csv', R2, delimiter=',', fmt='%.10f')
     
 if analysis_statistics == True:
     import seaborn as sns
@@ -902,15 +902,15 @@ if analysis_statistics == True:
     import pandas as pd
     import matplotlib.pyplot as plt
     
-    k5_1 = pd.read_csv("./statistics/RMSE_5_fold_dataset_1.csv", header=None)
-    k5_2 = pd.read_csv("./statistics/RMSE_5_fold_dataset_2.csv", header=None)
-    k5_3 = pd.read_csv("./statistics/RMSE_5_fold_dataset_3.csv", header=None)
-    k10_1 = pd.read_csv("./statistics/RMSE_10_fold_dataset_1.csv", header=None)
-    k10_2 = pd.read_csv("./statistics/RMSE_10_fold_dataset_2.csv", header=None)
-    k10_3 = pd.read_csv("./statistics/RMSE_10_fold_dataset_3.csv", header=None)
-    k20_1 = pd.read_csv("./statistics/RMSE_20_fold_dataset_1.csv", header=None)
-    k20_2 = pd.read_csv("./statistics/RMSE_20_fold_dataset_2.csv", header=None)
-    k20_3 = pd.read_csv("./statistics/RMSE_20_fold_dataset_3.csv", header=None)
+    k5_1 = pd.read_csv("./Statistics/RMSE_5_fold_dataset_1.csv", header=None)
+    k5_2 = pd.read_csv("./Statistics/RMSE_5_fold_dataset_2.csv", header=None)
+    k5_3 = pd.read_csv("./Statistics/RMSE_5_fold_dataset_3.csv", header=None)
+    k10_1 = pd.read_csv("./Statistics/RMSE_10_fold_dataset_1.csv", header=None)
+    k10_2 = pd.read_csv("./Statistics/RMSE_10_fold_dataset_2.csv", header=None)
+    k10_3 = pd.read_csv("./Statistics/RMSE_10_fold_dataset_3.csv", header=None)
+    k20_1 = pd.read_csv("./Statistics/RMSE_20_fold_dataset_1.csv", header=None)
+    k20_2 = pd.read_csv("./Statistics/RMSE_20_fold_dataset_2.csv", header=None)
+    k20_3 = pd.read_csv("./Statistics/RMSE_20_fold_dataset_3.csv", header=None)
     
     # Combine the data into a single DataFrame
     data = pd.concat([k5_1, k10_1, k20_1, k5_2, k10_2, k20_2, k5_3, k10_3, k20_3], axis=1)
