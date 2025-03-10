@@ -78,7 +78,7 @@ if dataset == 1:
       plt.xlabel('Time')
       plt.ylabel('Load (kW)')
       plt.grid(linestyle = '--', linewidth = 0.5, zorder=0)
-      plt.savefig('Original1.pdf', bbox_inches = 'tight')
+      plt.savefig('./Results/original1.pdf', bbox_inches = 'tight')
       plt.show()
 
   preprocessed = df[0:data_length]  # sample every 5 sec (12*60*24*30 = 1 month)
@@ -88,7 +88,7 @@ if dataset == 1:
       plt.xlabel('Time')
       plt.ylabel('Load (kW)')
       plt.grid(linestyle = '--', linewidth = 0.5, zorder=0)
-      plt.savefig('preprocessed1.pdf', bbox_inches = 'tight')
+      plt.savefig('./Results/preprocessed1.pdf', bbox_inches = 'tight')
       plt.show()
 
   preprocessed_d = df[0:12*60*24*3]
@@ -101,7 +101,7 @@ if dataset == 1:
       plt.xlabel('Time')
       plt.ylabel('Load (kW)')
       plt.grid(linestyle = '--', linewidth = 0.5, zorder=0)
-      plt.savefig('downsample.pdf', bbox_inches = 'tight')
+      plt.savefig('./Results/downsample1.pdf', bbox_inches = 'tight')
       plt.show()
 
   # Measure the period of each time series
@@ -122,7 +122,7 @@ if dataset == 2:
       plt.xticks(rotation=45)
       plt.ylabel('Load (kW)')
       plt.grid(linestyle = '--', linewidth = 0.5, zorder=0)
-      plt.savefig('Original2.pdf', bbox_inches = 'tight')
+      plt.savefig('./Results/original2.pdf', bbox_inches = 'tight')
       plt.show()
 
   preprocessed=df[0:data_length] # sample every 1 min (60*24 = 1 day)
@@ -133,7 +133,7 @@ if dataset == 2:
       plt.xticks(rotation=45)
       plt.ylabel('Load (kW)')
       plt.grid(linestyle = '--', linewidth = 0.5, zorder=0)
-      plt.savefig('preprocessed2.pdf', bbox_inches = 'tight')
+      plt.savefig('./Results/preprocessed2.pdf', bbox_inches = 'tight')
       plt.show()
 
   # Measure the period of each time series
@@ -153,7 +153,7 @@ if dataset == 3:
       plt.xlabel('Time')
       plt.ylabel('Load (kW)')
       plt.grid(linestyle = '--', linewidth = 0.5, zorder=0)
-      plt.savefig('Original3.pdf', bbox_inches = 'tight')
+      plt.savefig('./Results/original3.pdf', bbox_inches = 'tight')
       plt.show()
 
   preprocessed=df[0:data_length] # sample every 1h (24 = 1 day)
@@ -164,7 +164,7 @@ if dataset == 3:
       plt.xticks(rotation=45)
       plt.ylabel('Load (kW)')
       plt.grid(linestyle = '--', linewidth = 0.5, zorder=0)
-      plt.savefig('preprocessed3.pdf', bbox_inches = 'tight')
+      plt.savefig('./Results/preprocessed3.pdf', bbox_inches = 'tight')
       plt.show()
 
   # Measure the period of each time series
@@ -224,7 +224,7 @@ if analysis_downsample == True:
       ax4.grid(linestyle = '--', linewidth = 0.5, zorder=0)
       ax4.set_title('(D)', loc='left')
       ax4.legend(loc='upper right')
-      plt.savefig('downsample.pdf', bbox_inches = 'tight')
+      plt.savefig('./Results/downsample.pdf', bbox_inches = 'tight')
       plt.show
       
 # All filters analysis
@@ -362,11 +362,11 @@ if analysis_filters == True:
         plt.show
         
         if dataset==1:
-          plt.savefig('filters1.pdf', bbox_inches = 'tight')
+          plt.savefig('./Results/filters1.pdf', bbox_inches = 'tight')
         if dataset==2:
-          plt.savefig('filters2.pdf', bbox_inches = 'tight')
+          plt.savefig('./Results/filters2.pdf', bbox_inches = 'tight')
         if dataset==3:
-          plt.savefig('filters3.pdf', bbox_inches = 'tight')
+          plt.savefig('./Results/filters3.pdf', bbox_inches = 'tight')
       
     # RMSE & MAE & MAPE & MSLE & R2
     if dataset==1:
@@ -424,11 +424,11 @@ if save_images == True:
     plt.tight_layout()
     plt.show
     if dataset==1:
-      plt.savefig('scalable_filter1.pdf', bbox_inches = 'tight')
+      plt.savefig('./Results/scalable_filter1.pdf', bbox_inches = 'tight')
     if dataset==2:
-      plt.savefig('scalable_filter2.pdf', bbox_inches = 'tight')
+      plt.savefig('./Results/scalable_filter2.pdf', bbox_inches = 'tight')
     if dataset==3:
-      plt.savefig('scalable_filter3.pdf', bbox_inches = 'tight')    
+      plt.savefig('./Results/scalable_filter3.pdf', bbox_inches = 'tight')    
 
 ###############################################################################
 ############################## Model Analysis #################################
@@ -522,7 +522,6 @@ if analysis_our_model_steps == True:
         data_input = scalable_filter
     else:
         data_input = preprocessed['Load']
-
         
     look_back = horizon   
     time_index = pd.to_datetime(time_df[0:len(data_input)])
@@ -726,7 +725,7 @@ if analysis_hypertuning == True:
         ax1.set_xlabel('LSTM units')
         ax1.set_ylabel('LSTM layers')
         plt.subplots_adjust(hspace=0.5)
-        plt.savefig('Opt_1.pdf', bbox_inches = 'tight')
+        plt.savefig('./Results/opt_1.pdf', bbox_inches = 'tight')
         plt.show()
         
         # Combine data into a DataFrame
@@ -742,7 +741,7 @@ if analysis_hypertuning == True:
         plt.figure(figsize=(7, 5))
         # Use seaborn pairplot
         sns.pairplot(data, vars=['LSTM_units', 'LSTM_layers', 'optimizer', 'filters', 'batch_size'], hue='RMSE', palette='viridis', diag_kind='kde')
-        plt.savefig('Opt_2.pdf', bbox_inches = 'tight')
+        plt.savefig('./Results/opt_2.pdf', bbox_inches = 'tight')
         plt.show()
         
         from sklearn.decomposition import PCA
@@ -781,22 +780,22 @@ if analysis_hypertuning == True:
         plt.xlabel('Principal Component 1')
         plt.ylabel('Principal Component 2')
         #plt.title('Hyperparameter Optimization Results (All Hyperparameters)')
-        plt.savefig('Opt_3.pdf', bbox_inches = 'tight')
+        plt.savefig('./Results/opt_3.pdf', bbox_inches = 'tight')
         plt.show()
 
     end = time.time()
     time_s = end - start
     print(time_s)
 
-    '''rand_suggest_b = pd.read_csv('best_losses_1.csv')
-    anneal_suggest_b = pd.read_csv('best_losses_2.csv')
-    tpe_suggest_b = pd.read_csv('best_losses_3.csv')
-    atpe_suggest_b = pd.read_csv('best_losses_4.csv')
+    '''rand_suggest_b = pd.read_csv('./Results/best_losses_1.csv')
+    anneal_suggest_b = pd.read_csv('./Results/best_losses_2.csv')
+    tpe_suggest_b = pd.read_csv('./Results/best_losses_3.csv')
+    atpe_suggest_b = pd.read_csv('./Results/best_losses_4.csv')
     
-    rand_suggest = pd.read_csv('losses_1.csv')
-    anneal_suggest = pd.read_csv('losses_2.csv')
-    tpe_suggest = pd.read_csv('losses_3.csv')
-    atpe_suggest = pd.read_csv('losses_4.csv')
+    rand_suggest = pd.read_csv('./Results/losses_1.csv')
+    anneal_suggest = pd.read_csv('./Results/losses_2.csv')
+    tpe_suggest = pd.read_csv('./Results/losses_3.csv')
+    atpe_suggest = pd.read_csv('./Results/losses_4.csv')
     
     if save_images == True:
         # Plot the Best Loss per Trial
@@ -809,7 +808,7 @@ if analysis_hypertuning == True:
         plt.ylabel('Best loss')
         plt.legend()
         plt.grid()
-        plt.savefig('Opt_strategy_best.pdf', bbox_inches = 'tight')
+        plt.savefig('./Results/opt_strategy_best.pdf', bbox_inches = 'tight')
         plt.show()
     
         # Plot the Loss per Trial
@@ -822,7 +821,7 @@ if analysis_hypertuning == True:
         plt.ylabel('Loss')
         plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.grid()
-        plt.savefig('Opt_strategy.pdf', bbox_inches = 'tight')
+        plt.savefig('./Results/opt_strategy.pdf', bbox_inches = 'tight')
         plt.show()'''
  
 # Compute k_fold opt model
@@ -955,7 +954,7 @@ if analysis_statistics == True:
     # Add a single y-axis label to the figure
     fig.text(0.04, 0.5, 'RMSE', va='center', rotation='vertical')
     plt.tight_layout(rect=[0.05, 0, 1, 1])
-    plt.savefig("Stats.pdf", dpi=800, bbox_inches = 'tight')
+    plt.savefig("./Results/stats.pdf", dpi=800, bbox_inches = 'tight')
     plt.show()
 
 if analysis_our_model == True:
