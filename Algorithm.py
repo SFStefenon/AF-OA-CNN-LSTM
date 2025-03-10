@@ -706,8 +706,8 @@ if analysis_hypertuning == True:
     best_losses = np.minimum.accumulate(losses)
 
     # Save losses of each optmization strategy
-    #np.savetxt('best_losses_4.csv', best_losses, delimiter=',', fmt='%.10f')
-    #np.savetxt('losses_4.csv', losses, delimiter=',', fmt='%.10f')
+    #np.savetxt('./Results/best_losses_4.csv', best_losses, delimiter=',', fmt='%.10f')
+    #np.savetxt('./Results/losses_4.csv', losses, delimiter=',', fmt='%.10f')
     
     if save_images == True:
         import matplotlib.tri as tri
