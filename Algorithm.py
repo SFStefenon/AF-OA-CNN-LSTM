@@ -1,7 +1,7 @@
 # Setup for analysis
 dataset = 1  # (1 - Liege, 2 - TUO, 3 - Rye)
 horizon = 10
-epochs = 1
+epochs = 100
 data_split = 0.2 # Test (%)
 epochs_h = 20
 max_evals = 50
@@ -23,7 +23,7 @@ analysis_statistics = False
 analysis_our_model_steps = False
 cnn_use = False
 attention_use = False
-filter_use_std = False
+filter_use_std = False 
 filter_use_scalable = False
 
 # For benchmarking
@@ -36,7 +36,7 @@ if fixed_samples == True:
     # For a fixed data length
     data_length = 1000
 else:
-    # For one month data length
+    # For one-month data length
     if dataset==1:
       data_length = 12*60*24*30 # Sample every 5 sec (12*60*24*30 = 1 month)
     if dataset==2:
