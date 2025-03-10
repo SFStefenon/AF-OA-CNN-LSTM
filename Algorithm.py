@@ -67,7 +67,7 @@ from tensorflow.keras.optimizers import Adam
 
 # Time series preprocessing dataset 1
 if dataset == 1:
-  df = pd.read_csv('miris_load.csv', parse_dates=['DateTime'])
+  df = pd.read_csv('./Dataset/miris_load.csv', parse_dates=['DateTime'])
   df = df.rename(columns={'Conso': 'Load'})
   time_df = df['DateTime']
   df.set_index('DateTime', inplace=True)
@@ -110,7 +110,7 @@ if dataset == 1:
 
 # Time series preprocessing dataset 2
 if dataset == 2:
-  df = pd.read_excel('PowerQuality3-combin.xls', skiprows=2)
+  df = pd.read_excel('./Dataset/PowerQuality3-combin.xls', skiprows=2)
   df = df.rename(columns={'record time[s]': 'DateTime', 'avg.Pfh1[kW]': 'Load'})
   time_df = df['DateTime']
   df.set_index('DateTime', inplace=True)
@@ -142,7 +142,7 @@ if dataset == 2:
 
 # Time series preprocessing dataset 3
 if dataset == 3:
-  df = pd.read_csv('rye_generation_and_load.csv', parse_dates=['index'])
+  df = pd.read_csv('./Dataset/rye_generation_and_load.csv', parse_dates=['index'])
   df = df.rename(columns={'index': 'DateTime', 'Consumption': 'Load'})
   time_df = df['DateTime']
   df.set_index('DateTime', inplace=True)
