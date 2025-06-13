@@ -1,4 +1,4 @@
-# Adaptive filter optimized attention-based CNN-LSTM model
+# Adaptive filter optimized attention-based CNN-LSTM
 
 This repository presents an adaptive filter optimized attention-based CNN-LSTM (AF-OA-CNN-LSTM) model hypertunded by an adaptive tree-structured Parzen estimator (ATPE).
 The proposed AF-OA-CNN-LSTM considers an evaluation of random search, annealing search, TPE, and ATPE to model hyperparameter tuning.
