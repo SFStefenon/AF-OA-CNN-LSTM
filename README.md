@@ -7,7 +7,7 @@ The model is compared to TiDE, NHITS, N-BEATS, NBEATSx, DilatedRNN, LSTM, GRU, D
 For denoising, the SMA, STL, EMA, SG, HP, Butterworth, Gaussian, Median, Wiener, Kalman, and Wavelet filters are compared.
 The complete pipeline of the analysis of the proposed method is presented below:
 
-![Kin-Project](https://github.com/user-attachments/assets/dcdf6038-88ef-48ba-8b7f-ca8a73881e3c)
+<img width="3163" height="1783" alt="Kin-Project" src="https://github.com/user-attachments/assets/7a95cac5-f7b9-47c7-950a-366f22bab85e" />
 
 ---
 
