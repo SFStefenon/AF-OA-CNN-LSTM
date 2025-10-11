@@ -13,10 +13,10 @@ The complete pipeline of the analysis of the proposed method is presented below:
 
 Additional information can be found at the **[Original Paper](https://doi.org/10.1016/j.rineng.2025.107470)**.
 
-Stefenon, S. F., Yow, K. C. Adaptive filter-driven optimized attention-based CNN-LSTM for load forecasting in microgrids, Results in Engineering, vol. preprint, p. 107470, 2025.
+Stefenon, S. F., Yow, K. C. Adaptive filter-driven optimized attention-based CNN-LSTM for load forecasting in microgrids, Results in Engineering, vol. 28, p. 107470, 2025.
 
 BibTeX:
-`@Article{s23063202, AUTHOR = {Stefenon, Stefano Frizzo and Yow, Kin-Choong}, TITLE = {Adaptive filter-driven optimized attention-based CNN-LSTM for load forecasting in microgrids}, JOURNAL = {Results in Engineering}, VOLUME = {}, YEAR = {2025}, PAGES = {107470}, DOI = {10.1016/j.rineng.2025.107470}}`
+`@Article{s23063202, AUTHOR = {Stefenon, Stefano Frizzo and Yow, Kin-Choong}, TITLE = {Adaptive filter-driven optimized attention-based CNN-LSTM for load forecasting in microgrids}, JOURNAL = {Results in Engineering}, VOLUME = {28}, YEAR = {2025}, PAGES = {107470}, DOI = {10.1016/j.rineng.2025.107470}}`
 
 ---
 
