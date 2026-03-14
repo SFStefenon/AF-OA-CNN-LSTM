@@ -27,10 +27,9 @@ filter_use_std = False
 filter_use_scalable = False
 
 # For benchmarking
-analysis_benchmarking = False
+analysis_benchmarking = True
 analysis_our_model = False
 filter_use = False
-
 
 if fixed_samples == True:
     # For a fixed data length
@@ -1000,290 +999,54 @@ if analysis_our_model == True:
     print(Our)
 
 if analysis_benchmarking == True:
-    # Load libraries
-    from neuralforecast import NeuralForecast
-    from neuralforecast.models import TFT
-    from neuralforecast.models import DilatedRNN
-    from neuralforecast.models import NHITS
-    from neuralforecast.models import TCN
-    from neuralforecast.models import LSTM
-    from neuralforecast.models import RNN
-    from neuralforecast.models import NBEATS
-    from neuralforecast.models import NBEATSx
-    from neuralforecast.models import GRU
-    from neuralforecast.models import Informer
-    from neuralforecast.models import TiDE
-    from neuralforecast.models import PatchTST
-    from neuralforecast.models import FEDformer
-    from neuralforecast.models import MLP
-    from neuralforecast.models import TimesNet
-    from neuralforecast.models import DeepAR
-    from neuralforecast.models import BiTCN
-    
-    # Model setup
     max_steps = epochs
-    input_size = horizon  
-    freq = 's'
+    input_size = horizon
+    freq = "s"
     
-    if filter_use  == True:
-        x = wiener(list(preprocessed['Load']), mysize=3)
+    if filter_use is True:
+        x = wiener(np.asarray(preprocessed["Load"], dtype=float), mysize=3)
     else:
-        x = preprocessed['Load']
-     
+        x = np.asarray(preprocessed["Load"], dtype=float)
+    
     # Create the time data
-    time_data = pd.date_range(str(time_df[0]), periods=len(x), freq=freq)
+    time_data = pd.date_range(start=str(time_df[0]), periods=len(x), freq=freq)
     
     # Create the DataFrame
-    df = pd.DataFrame({
-        'unique_id': np.array(['Airline1'] * len(x)),
-        'ds': time_data,
-        'y': x,
-        'trend': np.arange(len(x)),})
+    df = pd.DataFrame({"unique_id": ["Airline1"] * len(x), "ds": time_data, "y": x,"trend": np.arange(len(x), dtype=float)})
     
     # Split data based on your criteria
-    split_point = int(len(df) * (1-data_split))
+    split_point = int(len(df) * (1 - data_split))
     Y_train_df = df.iloc[:split_point].reset_index(drop=True)
     Y_test_df = df.iloc[split_point:].reset_index(drop=True)
-    y_true = Y_test_df.y[:horizon]
-    
+    if len(Y_test_df) < horizon:
+        raise ValueError("The test set is smaller than the forecast horizon.")
+    if len(Y_train_df) < input_size:
+        raise ValueError("The training set is smaller than the input size.")
+    y_true = Y_test_df["y"].iloc[:horizon].to_numpy(dtype=float)
+       
     def performance(y_true, y_pred, time_s):
-        # Calculate metrics
+        y_true = np.asarray(y_true, dtype=float)
+        y_pred = np.asarray(y_pred, dtype=float)
         rmse_v = rmse(y_true, y_pred)
         mae_v = mean_absolute_error(y_true, y_pred)
-        mape_v = mean_absolute_percentage_error(y_true, y_pred)
-        msle_v = mean_squared_log_error(y_true, abs(y_pred))
-        # r2_v = abs(r2_score(y_true, y_pred))
-        # RMSE & MAE & MAPE & MSLE & R2 & time
-        result = (f'{rmse_v:.2E} & {mae_v:.2E} & {mape_v:.2E} & {msle_v:.2E} & {time_s:.2E} \\\\') # & {r2_v:.2E}
-        return result
-
-    start = time.time()
-    models = [MLP(input_size=input_size, h=horizon, max_steps=max_steps)]
-    nf = NeuralForecast(models=models, freq=freq)
-    nf.fit(df=Y_train_df)
-    Y_hat_df = nf.predict().reset_index()
-    end = time.time()
-    time_s = end - start
-    y_pred = Y_hat_df.MLP[:horizon]
-    performance_metrics = performance(y_true, y_pred, time_s)
-    MLP = (f'MLP & {performance_metrics}') 
-
-    start = time.time()
-    models = [TFT(input_size=input_size, h=horizon, max_steps=max_steps)]
-    nf = NeuralForecast(models=models, freq=freq)
-    nf.fit(df=Y_train_df)
-    Y_hat_df = nf.predict().reset_index()
-    end = time.time()
-    time_s = end - start
-    y_pred = Y_hat_df.TFT[:horizon]
-    performance_metrics = performance(y_true, y_pred, time_s)
-    TFT = (f'TFT & {performance_metrics}')
-
-    start = time.time()
-    models = [RNN(input_size=input_size, h=horizon, max_steps=max_steps)]
-    nf = NeuralForecast(models=models, freq=freq)
-    nf.fit(df=Y_train_df)
-    Y_hat_df = nf.predict().reset_index()
-    end = time.time()
-    time_s = end - start
-    y_pred = Y_hat_df.RNN[:horizon]
-    performance_metrics = performance(y_true, y_pred, time_s)
-    RNN = (f'RNN & {performance_metrics}')  
+        mape_v = np.mean(np.abs((y_true - y_pred) / np.maximum(np.abs(y_true), 1e-10)))
+        msle_v = mean_squared_log_error(np.clip(y_true, 0, None), np.clip(y_pred, 0, None))
+        return f"{rmse_v:.2E} & {mae_v:.2E} & {mape_v:.2E} & {msle_v:.2E} & {time_s:.2E} \\\\"
     
-    start = time.time()
-    models = [DilatedRNN(input_size=input_size, h=horizon, max_steps=max_steps)]
-    nf = NeuralForecast(models=models, freq=freq)
-    nf.fit(df=Y_train_df)
-    Y_hat_df = nf.predict().reset_index()
-    end = time.time()
-    time_s = end - start
-    y_pred = Y_hat_df.DilatedRNN [:horizon]
-    performance_metrics = performance(y_true, y_pred, time_s)
-    DilatedRNN = (f'DilatedRNN & {performance_metrics}')  
+    from neuralforecast import NeuralForecast
+    from neuralforecast.models import MLP, TFT, RNN, DilatedRNN, NHITS, TCN, BiTCN, LSTM, NBEATS, NBEATSx, GRU, Informer, TiDE, PatchTST, FEDformer, DeepAR, TimesNet
     
-    start = time.time()
-    models = [NHITS(input_size=input_size, h=horizon, max_steps=max_steps)]
-    nf = NeuralForecast(models=models, freq=freq)
-    nf.fit(df=Y_train_df)
-    Y_hat_df = nf.predict().reset_index()
-    end = time.time()
-    time_s = end - start
-    y_pred = Y_hat_df.NHITS[:horizon]
-    performance_metrics = performance(y_true, y_pred, time_s)
-    NHITS = (f'NHITS & {performance_metrics}')      
-
-    start = time.time()  
-    models = [TCN(input_size=input_size, h=horizon, max_steps=max_steps)]
-    nf = NeuralForecast(models=models, freq=freq)
-    nf.fit(df=Y_train_df)
-    Y_hat_df = nf.predict().reset_index()
-    end = time.time()
-    time_s = end - start
-    y_pred = Y_hat_df.TCN[:horizon]
-    performance_metrics = performance(y_true, y_pred, time_s)
-    TCN = (f'TCN & {performance_metrics}')
+    def evaluate_model(model_class):
+        start = time.time()
+        nf = NeuralForecast(models=[model_class(input_size=input_size, h=horizon, max_steps=max_steps)],freq=freq)
+        nf.fit(df=Y_train_df)
+        Y_hat_df = nf.predict().reset_index()
+        time_s = time.time() - start
+        model_name = model_class.__name__
+        y_pred = Y_hat_df[model_name].iloc[:horizon].to_numpy(dtype=float)
+        return f"{model_name} & {performance(y_true, y_pred, time_s)}"
     
-    start = time.time()
-    models = [BiTCN(input_size=input_size, h=horizon, max_steps=max_steps)]
-    nf = NeuralForecast(models=models, freq=freq)
-    nf.fit(df=Y_train_df)
-    Y_hat_df = nf.predict().reset_index()
-    end = time.time()
-    time_s = end - start
-    y_pred = Y_hat_df.BiTCN[:horizon]
-    performance_metrics = performance(y_true, y_pred, time_s)
-    BiTCN = (f'BiTCN & {performance_metrics}')   
-    
-    start = time.time()  
-    models = [LSTM(input_size=input_size, h=horizon, max_steps=max_steps)]
-    nf = NeuralForecast(models=models, freq=freq)
-    nf.fit(df=Y_train_df)
-    Y_hat_df = nf.predict().reset_index()
-    end = time.time()
-    time_s = end - start
-    y_pred = Y_hat_df.LSTM[:horizon]
-    performance_metrics = performance(y_true, y_pred, time_s)
-    LSTM = (f'LSTM & {performance_metrics}')    
-
-    start = time.time()  
-    models = [NBEATS(input_size=input_size, h=horizon, max_steps=max_steps)]
-    nf = NeuralForecast(models=models, freq=freq)
-    nf.fit(df=Y_train_df)
-    Y_hat_df = nf.predict().reset_index()
-    end = time.time()
-    time_s = end - start
-    y_pred = Y_hat_df.NBEATS[:horizon]
-    performance_metrics = performance(y_true, y_pred, time_s)
-    NBEATS = (f'NBEATS & {performance_metrics}')  
-
-    start = time.time()  
-    models = [NBEATSx(input_size=input_size, h=horizon, max_steps=max_steps)]
-    nf = NeuralForecast(models=models, freq=freq)
-    nf.fit(df=Y_train_df)
-    Y_hat_df = nf.predict().reset_index()
-    end = time.time()
-    time_s = end - start
-    y_pred = Y_hat_df.NBEATSx[:horizon]
-    performance_metrics = performance(y_true, y_pred, time_s)
-    NBEATSx = (f'NBEATSx & {performance_metrics}') 
-
-    start = time.time()  
-    models = [GRU(input_size=input_size, h=horizon, max_steps=max_steps)]
-    nf = NeuralForecast(models=models, freq=freq)
-    nf.fit(df=Y_train_df)
-    Y_hat_df = nf.predict().reset_index()
-    end = time.time()
-    time_s = end - start
-    y_pred = Y_hat_df.GRU[:horizon]
-    performance_metrics = performance(y_true, y_pred, time_s)
-    GRU = (f'GRU & {performance_metrics}') 
-
-    start = time.time()  
-    models = [Informer(input_size=input_size, h=horizon, max_steps=max_steps)]
-    nf = NeuralForecast(models=models, freq=freq)
-    nf.fit(df=Y_train_df)
-    Y_hat_df = nf.predict().reset_index()   
-    end = time.time()
-    time_s = end - start
-    y_pred = Y_hat_df.Informer[:horizon]
-    performance_metrics = performance(y_true, y_pred, time_s)
-    Informer = (f'Informer & {performance_metrics}') 
-    
-    start = time.time()  
-    models = [TiDE(input_size=input_size, h=horizon, max_steps=max_steps)]
-    nf = NeuralForecast(models=models, freq=freq)
-    nf.fit(df=Y_train_df)
-    Y_hat_df = nf.predict().reset_index()
-    end = time.time()
-    time_s = end - start
-    y_pred = Y_hat_df.TiDE[:horizon]
-    performance_metrics = performance(y_true, y_pred, time_s)
-    TiDE = (f'TiDE & {performance_metrics}') 
-
-    start = time.time()
-    models = [PatchTST(input_size=input_size, h=horizon, max_steps=max_steps)]
-    nf = NeuralForecast(models=models, freq=freq)
-    nf.fit(df=Y_train_df)
-    Y_hat_df = nf.predict().reset_index()
-    end = time.time()
-    time_s = end - start
-    y_pred = Y_hat_df.PatchTST[:horizon]
-    performance_metrics = performance(y_true, y_pred, time_s)
-    PatchTST = (f'PatchTST & {performance_metrics}') 
-    
-    start = time.time()
-    models = [FEDformer(input_size=input_size, h=horizon, max_steps=max_steps)]
-    nf = NeuralForecast(models=models, freq=freq)
-    nf.fit(df=Y_train_df)
-    Y_hat_df = nf.predict().reset_index()
-    end = time.time()
-    time_s = end - start
-    y_pred = Y_hat_df.FEDformer[:horizon]
-    performance_metrics = performance(y_true, y_pred, time_s)
-    FEDformer = (f'FEDformer & {performance_metrics}') 
-    
-    start = time.time()
-    models = [DeepAR(input_size=input_size, h=horizon, max_steps=max_steps)]
-    nf = NeuralForecast(models=models, freq=freq)
-    nf.fit(df=Y_train_df)
-    Y_hat_df = nf.predict().reset_index()
-    end = time.time()
-    time_s = end - start
-    y_pred = Y_hat_df.DeepAR[:horizon]
-    performance_metrics = performance(y_true, y_pred, time_s)
-    DeepAR = (f'DeepAR & {performance_metrics}') 
-    
-    start = time.time()
-    models = [TimesNet(input_size=input_size, h=horizon, max_steps=max_steps)]
-    nf = NeuralForecast(models=models, freq=freq)
-    nf.fit(df=Y_train_df)
-    Y_hat_df = nf.predict().reset_index()
-    end = time.time()
-    time_s = end - start
-    y_pred = Y_hat_df.TimesNet[:horizon]
-    performance_metrics = performance(y_true, y_pred, time_s)
-    TimesNet = (f'TimesNet & {performance_metrics}') 
-
-    print(MLP)
-    print(TiDE)
-    print(NHITS)
-    print(NBEATS)
-    print(NBEATSx)
-    
-    print(RNN)
-    print(DilatedRNN)
-    print(LSTM)
-    print(GRU)
-    print(DeepAR)
-    
-    print(TFT)
-    print(Informer)
-    print(PatchTST)
-    print(FEDformer)
-
-    print(TCN)
-    print(BiTCN)
-    print(TimesNet)   
-
-'''
-print(MLP)
-print(TiDE)
-print(NHITS)
-print(NBEATS)
-print(NBEATSx)
-
-print(RNN)
-print(DilatedRNN)
-print(LSTM)
-print(GRU)
-print(DeepAR)
-
-print(TFT)
-print(Informer)
-print(PatchTST)
-print(FEDformer)
-
-print(TCN)
-print(BiTCN)
-print(TimesNet)  
-print(Our)'''
+    models_list = [MLP, TFT, RNN, DilatedRNN, NHITS, TCN, BiTCN, LSTM, NBEATS, NBEATSx, GRU, Informer, TiDE, PatchTST, FEDformer, DeepAR, TimesNet]
+    results = [evaluate_model(model_class) for model_class in models_list]
+    for result in results:
+        print(result)
