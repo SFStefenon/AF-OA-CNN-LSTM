@@ -1,3 +1,8 @@
+# Create the paths
+from pathlib import Path
+for folder in ["Dataset", "Results", "Statistics"]:
+    Path(folder).mkdir(parents=True, exist_ok=True)
+    
 # Setup for analysis
 dataset = 1  # (1 - Liege, 2 - TUO, 3 - Rye)
 horizon = 10
@@ -27,8 +32,8 @@ filter_use_std = False
 filter_use_scalable = False
 
 # For benchmarking
-analysis_benchmarking = True
-analysis_our_model = False
+analysis_benchmarking = False
+analysis_our_model = True
 filter_use = False
 
 if fixed_samples == True:
@@ -1022,7 +1027,7 @@ if analysis_benchmarking == True:
         raise ValueError("The test set is smaller than the forecast horizon.")
     if len(Y_train_df) < input_size:
         raise ValueError("The training set is smaller than the input size.")
-    y_true = Y_test_df["y"].iloc[:horizon].to_numpy(dtype=float)
+    y_true = Y_test_df["y"].to_numpy(dtype=float)
        
     def performance(y_true, y_pred, time_s):
         y_true = np.asarray(y_true, dtype=float)
@@ -1040,10 +1045,17 @@ if analysis_benchmarking == True:
         start = time.time()
         nf = NeuralForecast(models=[model_class(input_size=input_size, h=horizon, max_steps=max_steps)],freq=freq)
         nf.fit(df=Y_train_df)
-        Y_hat_df = nf.predict().reset_index()
+        preds = []
+        history_df = Y_train_df.copy()
+        for i in range(0, len(Y_test_df), horizon):
+            nf.fit(df=history_df)
+            Y_hat_df = nf.predict().reset_index()
+            model_name = model_class.__name__
+            y_pred_i = Y_hat_df[model_name].iloc[:horizon].to_numpy(dtype=float)
+            preds.extend(y_pred_i[:len(Y_test_df.iloc[i:i+horizon])])
+            history_df = pd.concat([history_df, Y_test_df.iloc[i:i+horizon]],ignore_index=True)
         time_s = time.time() - start
-        model_name = model_class.__name__
-        y_pred = Y_hat_df[model_name].iloc[:horizon].to_numpy(dtype=float)
+        y_pred = np.asarray(preds, dtype=float)
         return f"{model_name} & {performance(y_true, y_pred, time_s)}"
     
     models_list = [MLP, TFT, RNN, DilatedRNN, NHITS, TCN, BiTCN, LSTM, NBEATS, NBEATSx, GRU, Informer, TiDE, PatchTST, FEDformer, DeepAR, TimesNet]
