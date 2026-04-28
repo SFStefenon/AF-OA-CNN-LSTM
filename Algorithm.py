@@ -1,17 +1,22 @@
+# For Colab
+#!pip install neuralforecast
+#!pip install pykalman
+
 # Create the paths
 from pathlib import Path
 for folder in ["Dataset", "Results", "Statistics"]:
     Path(folder).mkdir(parents=True, exist_ok=True)
     
 # Setup for analysis
-dataset = 1  # (1 - Liege, 2 - TUO, 3 - Rye)
-horizon = 10
-epochs = 100
+dataset = 3  # (1 - Liege, 2 - TUO, 3 - Rye)
+horizon = 5 # 5 is the minimum
+epochs = 1
 data_split = 0.2 # Test (%)
-epochs_h = 20
-max_evals = 50
-k_fold = 5
+epochs_h = 1
+max_evals = 5 # 5 is the minimum
+k_fold = 20
 k_scalable = 20
+Batch_size = 32
 
 save_images = True
 fixed_samples = True
@@ -19,26 +24,26 @@ fixed_samples = True
 # General analysis
 analysis_downsample = False
 analysis_filters = False
-analysis_horizon = False
+analysis_horizon = True
 analysis_hypertuning = False
-analysis_opt_model_k_fold = False
-analysis_statistics = False
+analysis_opt_model_k_fold = False # It works only if you computed all datasets and k_fold
+analysis_statistics = True
 
 # To evaluate our model step by step
-analysis_our_model_steps = False
-cnn_use = False
-attention_use = False
-filter_use_std = False 
-filter_use_scalable = False
+analysis_our_model_steps = True
+cnn_use = True
+attention_use = True
+filter_use_std = True 
+filter_use_scalable = True
 
 # For benchmarking
-analysis_benchmarking = False
+analysis_benchmarking = True
 analysis_our_model = True
-filter_use = False
+filter_use = True
 
 if fixed_samples == True:
     # For a fixed data length
-    data_length = 1000
+    data_length = 100
 else:
     # For one-month data length
     if dataset==1:
@@ -65,6 +70,17 @@ from tensorflow.keras.layers import Input, Conv1D, MaxPooling1D, LSTM, Dense
 from tensorflow.keras.layers import Attention, Flatten
 from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.optimizers import Adam
+
+def performance(y_true, y_pred, time_s):
+    y_true = np.asarray(y_true, dtype=float).reshape(-1)
+    y_pred = np.asarray(y_pred, dtype=float).reshape(-1)
+    y_pred = np.clip(y_pred, 0, None)
+    rmse_v = np.sqrt(np.mean((y_true - y_pred) ** 2))
+    mae_v = mean_absolute_error(y_true, y_pred)
+    mape_v = np.mean(np.abs((y_true - y_pred) / np.maximum(np.abs(y_true), 1e-10)))
+    msle_v = mean_squared_log_error(np.clip(y_true, 0, None), y_pred)
+    r2_v = r2_score(y_true, y_pred)
+    return f'{rmse_v:.2E} & {mae_v:.2E} & {mape_v:.2E} & {msle_v:.2E} & {r2_v:.2E} & {time_s:.2E} \\\\'
 ###############################################################################
 ################################ Load Data ####################################
 ###############################################################################
@@ -160,7 +176,7 @@ if dataset == 3:
       plt.savefig('./Results/original3.pdf', bbox_inches = 'tight')
       plt.show()
 
-  preprocessed=df[0:data_length] # sample every 1h (24 = 1 day)
+  preprocessed = df[0:data_length] # sample every 1h (24 = 1 day)
   if save_images == True:
       plt.figure(figsize=(8, 3))
       plt.plot(preprocessed['Load'], 'k', zorder=2)
@@ -458,15 +474,17 @@ if analysis_horizon == True:
                 
       # Create DataFrame
       time_index = pd.to_datetime(time_df[0:len(data_input)])
-      data = pd.DataFrame({'Load': data_input}, index=time_index)
-    
-      # Normalize the data
+      data = np.asarray(data_input, dtype=float).reshape(-1, 1)
+      split_point = int(len(data) * (1 - data_split))
+      train_raw = data[:split_point]
+      test_raw = data[split_point - look_back:]
       scaler = MinMaxScaler(feature_range=(0, 1))
-      data_scaled = scaler.fit_transform(data.values.reshape(-1, 1))
-      X, y = create_dataset(data_scaled, look_back)
-    
-      # Reshape X to be compatible with Conv1D and LSTM layers
-      X = X.reshape((X.shape[0], X.shape[1], 1))
+      train_scaled = scaler.fit_transform(train_raw)
+      test_scaled = scaler.transform(test_raw)
+      X_train, y_train = create_dataset(train_scaled, look_back)
+      X_test, y_test = create_dataset(test_scaled, look_back)
+      X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
+      X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
     
       # Define the input shape
       input_shape = (look_back, 1)
@@ -483,13 +501,12 @@ if analysis_horizon == True:
       model.compile(optimizer='adam', loss='mean_squared_error')
     
       # Train model
-      model.fit(X, y, epochs=epochs, batch_size=32, validation_split=data_split)
-      predicted = model.predict(X) # Predicting the next time step
-      y_pred = list(map(abs, scaler.inverse_transform(predicted))) # There are no negative values 
-      y_true = list(map(abs, scaler.inverse_transform(y.reshape(-1, 1)))) # Inverse transform the actual values
+      model.fit(X_train, y_train, epochs=epochs, batch_size=Batch_size, validation_split=data_split, shuffle=False)
+      y_pred = scaler.inverse_transform(model.predict(X_test))
+      y_true = scaler.inverse_transform(y_test.reshape(-1, 1))
       # Save results
-      Results.append(f'& {look_back} & {(rmse(y_true, y_pred)[0]):.2E} & {(mean_absolute_error(y_true, y_pred)):.2E} & {(mean_absolute_percentage_error(y_true, y_pred)):.2E} & {(mean_squared_log_error(y_true, y_pred)):.2E} & {(r2_score(y_true, y_pred)):.2E} //')
-    
+      Results.append(f'& {look_back} & {performance(y_true, y_pred, 0)}')
+
     # RMSE & MAE & MAPE & MSLE & R2
     if dataset==1:
       print('\multirow{5}{*}{Liege}')
@@ -506,19 +523,9 @@ if analysis_horizon == True:
 ###############################################################################
 # Compute the model without hypertuning
 if analysis_our_model_steps == True:
-    def performance(y_true, y_pred, time_s):
-        # Calculate metrics
-        rmse_v = rmse(y_true, y_pred)[0]
-        mae_v = mean_absolute_error(y_true, y_pred)
-        mape_v = mean_absolute_percentage_error(y_true, y_pred)
-        msle_v = mean_squared_log_error(y_true, abs(y_pred))
-        r2_v = abs(r2_score(y_true, y_pred))
-        # RMSE & MAE & MAPE & MSLE & R2 & time
-        result = (f'{rmse_v:.2E} & {mae_v:.2E} & {mape_v:.2E} & {msle_v:.2E} & {r2_v:.2E} & {time_s:.2E} \\\\')
-        return result
 
     if filter_use_std == True and filter_use_scalable == True:
-        print('A filter need to be selected!'); data_input=[]
+        print('A filter need to be selected!'); data_input = scalable_filter
         
     elif filter_use_std == True and filter_use_scalable == False:
         data_input = wiener(list(preprocessed['Load']), mysize=3)
@@ -529,11 +536,17 @@ if analysis_our_model_steps == True:
         
     look_back = horizon   
     time_index = pd.to_datetime(time_df[0:len(data_input)])
-    data = pd.DataFrame({'Load': data_input}, index=time_index)
+    data = np.asarray(data_input, dtype=float).reshape(-1, 1)
+    split_point = int(len(data) * (1 - data_split))
+    train_raw = data[:split_point]
+    test_raw = data[split_point - look_back:]
     scaler = MinMaxScaler(feature_range=(0, 1))
-    data_scaled = scaler.fit_transform(data.values.reshape(-1, 1))
-    X, y = create_dataset(data_scaled, look_back)
-    X = X.reshape((X.shape[0], X.shape[1], 1))
+    train_scaled = scaler.fit_transform(train_raw)
+    test_scaled = scaler.transform(test_raw)
+    X_train, y_train = create_dataset(train_scaled, look_back)
+    X_test, y_test = create_dataset(test_scaled, look_back)
+    X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
+    X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
     input_shape = (look_back, 1)
     inputs = Input(shape=input_shape) # Input layer
     if cnn_use == True: # CNN Layer
@@ -552,9 +565,9 @@ if analysis_our_model_steps == True:
     model.compile(optimizer='adam', loss='mean_squared_error')
 
     start = time.time()
-    model.fit(X, y, epochs=epochs, batch_size=32, validation_split=data_split)
-    y_pred = scaler.inverse_transform(abs(model.predict(X)))
-    y_true = scaler.inverse_transform(y.reshape(-1, 1))
+    model.fit(X_train, y_train, epochs=epochs, batch_size=Batch_size, validation_split=data_split, shuffle=False)
+    y_pred = scaler.inverse_transform(model.predict(X_test))
+    y_true = scaler.inverse_transform(y_test.reshape(-1, 1))
     end = time.time()
     time_s = end - start
     performance_metrics = performance(y_true, y_pred, time_s)
@@ -625,15 +638,18 @@ if analysis_hypertuning == True:
     
     # Create DataFrame
     time_index = pd.to_datetime(time_df[0:len(data_input)])
-    data = pd.DataFrame({'Load': data_input}, index=time_index)
-    
-    # Normalize the data
+
+    data = np.asarray(data_input, dtype=float).reshape(-1, 1)
+    split_point = int(len(data) * (1 - data_split))
+    train_raw = data[:split_point]
+    test_raw = data[split_point - look_back:]
     scaler = MinMaxScaler(feature_range=(0, 1))
-    data_scaled = scaler.fit_transform(data.values.reshape(-1, 1))
-    X, y = create_dataset(data_scaled, look_back)
-    
-    # Reshape X to be compatible with Conv1D and LSTM layers
-    X = X.reshape((X.shape[0], X.shape[1], 1))
+    train_scaled = scaler.fit_transform(train_raw)
+    test_scaled = scaler.transform(test_raw)
+    X_train, y_train = create_dataset(train_scaled, look_back)
+    X_test, y_test = create_dataset(test_scaled, look_back)
+    X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
+    X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
     
     from hyperopt import STATUS_OK
     def objective(params):
@@ -645,7 +661,7 @@ if analysis_hypertuning == True:
     
       input_shape = (look_back, 1)
       inputs = Input(shape=input_shape)
-      x = Conv1D(filters=FILTERS, kernel_size=3, activation='relu')(inputs)
+      x = Conv1D(filters=FILTERS, kernel_size=3, activation='relu', padding='same')(inputs)
       x = MaxPooling1D(pool_size=2)(x)
     
       for _ in range(LSTM_layers):
@@ -656,12 +672,11 @@ if analysis_hypertuning == True:
       x = Dense(units=1)(x)
       model = Model(inputs=inputs, outputs=x)
       model.compile(optimizer=OPT, loss='mean_squared_error')
-      model.fit(X, y, epochs=epochs_h, batch_size=BATCH_SIZE, validation_split=data_split)
-      predicted = model.predict(X)
-      predicted = scaler.inverse_transform(predicted)
-      y_actual = scaler.inverse_transform(y.reshape(-1, 1))
+      model.fit(X_train, y_train, epochs=epochs, batch_size=Batch_size, validation_split=data_split, shuffle=False)
+      y_pred = scaler.inverse_transform(model.predict(X_test))
+      y_true = scaler.inverse_transform(y_test.reshape(-1, 1))
     
-      return {"loss": rmse(y_actual, predicted), "status": STATUS_OK}
+      return {"loss": np.sqrt(np.mean((y_true.reshape(-1) - y_pred.reshape(-1)) ** 2)), "status": STATUS_OK}
     
     from hyperopt import hp
     
@@ -840,22 +855,24 @@ if analysis_opt_model_k_fold == True:
     
     # Create DataFrame
     time_index = pd.to_datetime(time_df[0:len(data_input)])
-    data = pd.DataFrame({'Load': data_input}, index=time_index)
-    
-    # Normalize the data
+    data = np.asarray(data_input, dtype=float).reshape(-1, 1)
+    split_point = int(len(data) * (1 - data_split))
+    train_raw = data[:split_point]
+    test_raw = data[split_point - look_back:]
     scaler = MinMaxScaler(feature_range=(0, 1))
-    data_scaled = scaler.fit_transform(data.values.reshape(-1, 1))
-    X, y = create_dataset(data_scaled, look_back)
-    
-    # Reshape X to be compatible with Conv1D and LSTM layers
-    X = X.reshape((X.shape[0], X.shape[1], 1))
+    train_scaled = scaler.fit_transform(train_raw)
+    test_scaled = scaler.transform(test_raw)
+    X_train, y_train = create_dataset(train_scaled, look_back)
+    X_test, y_test = create_dataset(test_scaled, look_back)
+    X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
+    X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
     
     # Define the input shape
     input_shape = (look_back, 1)
     
     # Model setup
     inputs = Input(shape=input_shape) # Input layer
-    x = Conv1D(filters=Filters, kernel_size=3, activation='relu')(inputs) # CNN Layer
+    x = Conv1D(filters=Filters, kernel_size=3, activation='relu', padding='same')(inputs) # CNN Layer
     x = MaxPooling1D(pool_size=2)(x)
     # Add LSTM layers in a loop
     for _ in range(LSTM_layers):
@@ -875,18 +892,18 @@ if analysis_opt_model_k_fold == True:
     RMSE, MAE, MAPE, MSLE, R2 = [], [], [], [], []
 
     # Iterate over each fold
-    for train_index, test_index in kf.split(X):
+    for train_index, test_index in kf.split(X_train):
     
         # Split the data into training and testing sets
-        X_train, X_true = X[train_index], X[test_index]
-        y_train, y_true = y[train_index], y[test_index]
+        X_fold_train, X_fold_test = X_train[train_index], X_train[test_index]
+        y_fold_train, y_fold_test = y_train[train_index], y_train[test_index]
     
         # Train the model
-        model.fit(X_train, y_train, epochs=epochs, batch_size=Batch_size, validation_split=data_split)
+        model.fit(X_fold_train, y_fold_train, epochs=epochs, batch_size=Batch_size, validation_split=data_split, shuffle=False)
     
         # Evaluate the model
-        y_pred = scaler.inverse_transform(abs(model.predict(X_true)))
-        y_true = scaler.inverse_transform(y_true.reshape(-1, 1))
+        y_pred = scaler.inverse_transform(model.predict(X_fold_test))
+        y_true = scaler.inverse_transform(y_fold_test.reshape(-1, 1))
         
         RMSE.append(float(rmse(y_true, y_pred)))
         MAE.append(mean_absolute_error(y_true, y_pred))
@@ -962,29 +979,27 @@ if analysis_statistics == True:
     plt.show()
 
 if analysis_our_model == True:
-    def performance(y_true, y_pred, time_s):
-        # Calculate metrics
-        rmse_v = rmse(y_true, y_pred)[0]
-        mae_v = mean_absolute_error(y_true, y_pred)
-        mape_v = mean_absolute_percentage_error(y_true, y_pred)
-        msle_v = mean_squared_log_error(y_true, abs(y_pred))
-        r2_v = abs(r2_score(y_true, y_pred))
-        # RMSE & MAE & MAPE & MSLE & R2 & time
-        result = (f'{rmse_v:.2E} & {mae_v:.2E} & {mape_v:.2E} & {msle_v:.2E} & {r2_v:.2E} & {time_s:.2E} \\\\')
-        return result
     # Hypertuned results
     LSTM_layers = 7; LSTM_units = 80; Batch_size = 16; Filters = 384; Opt = 'adamw'
     look_back = horizon
     data_input = scalable_filter
     time_index = pd.to_datetime(time_df[0:len(data_input)])
-    data = pd.DataFrame({'Load': data_input}, index=time_index)
+    
+    data = np.asarray(data_input, dtype=float).reshape(-1, 1)
+    split_point = int(len(data) * (1 - data_split))
+    train_raw = data[:split_point]
+    test_raw = data[split_point - look_back:]
     scaler = MinMaxScaler(feature_range=(0, 1))
-    data_scaled = scaler.fit_transform(data.values.reshape(-1, 1))
-    X, y = create_dataset(data_scaled, look_back)
-    X = X.reshape((X.shape[0], X.shape[1], 1))
+    train_scaled = scaler.fit_transform(train_raw)
+    test_scaled = scaler.transform(test_raw)
+    X_train, y_train = create_dataset(train_scaled, look_back)
+    X_test, y_test = create_dataset(test_scaled, look_back)
+    X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
+    X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
+
     input_shape = (look_back, 1)
     inputs = Input(shape=input_shape) # Input layer
-    x = Conv1D(filters=Filters, kernel_size=3, activation='relu')(inputs) # CNN Layer
+    x = Conv1D(filters=Filters, kernel_size=3, activation='relu', padding='same')(inputs) # CNN Layer
     x = MaxPooling1D(pool_size=2)(x)
     for _ in range(LSTM_layers):
         x = LSTM(units=LSTM_units, return_sequences=True)(x)  # LSTM Layers
@@ -994,9 +1009,9 @@ if analysis_our_model == True:
     model = Model(inputs=inputs, outputs=x) # Compile the model
     model.compile(optimizer=Opt, loss='mean_squared_error')
     start = time.time()
-    model.fit(X, y, epochs=epochs, batch_size=Batch_size, validation_split=data_split)
-    y_pred = scaler.inverse_transform(abs(model.predict(X)))
-    y_true = scaler.inverse_transform(y.reshape(-1, 1))
+    model.fit(X_train, y_train, epochs=epochs, batch_size=Batch_size, validation_split=data_split, shuffle=False)
+    y_pred = scaler.inverse_transform(model.predict(X_test))
+    y_true = scaler.inverse_transform(y_test.reshape(-1, 1))
     end = time.time()
     time_s = end - start
     performance_metrics = performance(y_true, y_pred, time_s)
@@ -1028,16 +1043,7 @@ if analysis_benchmarking == True:
     if len(Y_train_df) < input_size:
         raise ValueError("The training set is smaller than the input size.")
     y_true = Y_test_df["y"].to_numpy(dtype=float)
-       
-    def performance(y_true, y_pred, time_s):
-        y_true = np.asarray(y_true, dtype=float)
-        y_pred = np.asarray(y_pred, dtype=float)
-        rmse_v = rmse(y_true, y_pred)
-        mae_v = mean_absolute_error(y_true, y_pred)
-        mape_v = np.mean(np.abs((y_true - y_pred) / np.maximum(np.abs(y_true), 1e-10)))
-        msle_v = mean_squared_log_error(np.clip(y_true, 0, None), np.clip(y_pred, 0, None))
-        return f"{rmse_v:.2E} & {mae_v:.2E} & {mape_v:.2E} & {msle_v:.2E} & {time_s:.2E} \\\\"
-    
+
     from neuralforecast import NeuralForecast
     from neuralforecast.models import MLP, TFT, RNN, DilatedRNN, NHITS, TCN, BiTCN, LSTM, NBEATS, NBEATSx, GRU, Informer, TiDE, PatchTST, FEDformer, DeepAR, TimesNet
     
